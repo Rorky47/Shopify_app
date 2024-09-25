@@ -2,23 +2,63 @@ import requests
 from bs4 import BeautifulSoup
 import logging
 import os
+import random
+import time
+import urllib.parse
 import base64
 from config import SHOPIFY_STORE, SHOPIFY_ACCESS_TOKEN, IGNORE_LIST_FILE
 
+USER_AGENTS = [
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3',
+    'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:45.0) Gecko/20100101 Firefox/45.0',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:78.0) Gecko/20100101 Firefox/78.0',
+    'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.87 Safari/537.36',
+]
+
 def scrape_images(product_title):
-    query = product_title.replace(' ', '+')
-    url = f"https://www.google.com/search?q={query}&tbm=isch"
-    headers = {"User-Agent": "Mozilla/5.0"}
-    response = requests.get(url, headers=headers)
+    """
+    Scrapes images related to the product title from Google Images. Introduces delay and user-agent rotation to avoid
+    detection and rate limits.
+    
+    Args:
+        product_title (str): The title of the product for which to scrape images.
+    
+    Returns:
+        list: A list of image URLs related to the product title.
+    """
+    search_query = f"https://www.google.com/search?q={product_title}&tbm=isch"
+    headers = {
+        'User-Agent': random.choice(USER_AGENTS)  # Rotate User-Agent
+    }
 
-    if response.status_code == 200:
-        soup = BeautifulSoup(response.text, 'html.parser')
-        img_tags = soup.find_all('img')
+    try:
+        # Introduce a random delay to avoid quick successive requests
+        time.sleep(random.uniform(1.5, 4.0))
 
-        images = [img.get('src') for img in img_tags if img.get('src').startswith('http')]
-        return images
-    else:
-        return []
+        # Make the request to Google Images
+        response = requests.get(search_query, headers=headers, timeout=10)
+        response.raise_for_status()
+
+        # Parse the response content
+        soup = BeautifulSoup(response.content, 'html.parser')
+
+        # Find image tags and extract the image URLs
+        image_elements = soup.find_all('img')
+        image_urls = [img['src'] for img in image_elements if 'src' in img.attrs]
+
+        # Log the number of images found
+        logging.info(f"Successfully fetched {len(image_urls)} images for {product_title}")
+
+        # Return the list of image URLs
+        return image_urls
+
+    except requests.exceptions.Timeout:
+        logging.error(f"Timeout occurred while trying to scrape images for {product_title}")
+        return []  # Return an empty list if the request times out
+
+    except requests.exceptions.RequestException as e:
+        logging.error(f"Error scraping images for {product_title}: {e}")
+        return []  # Return an empty list in case of any other error
 
 def download_image(image_url):
     """
@@ -37,6 +77,7 @@ def download_image(image_url):
     else:
         print(f"Failed to download image from {image_url}. Status code: {response.status_code}")
         return None
+
 def upload_images_to_shopify(product_id, image_data, filename):
     """
     Uploads an image to Shopify for the specified product using base64 encoding.
@@ -228,11 +269,16 @@ def get_vendor_products(vendor, min_inventory_level):
     limit = 50  # Number of products to fetch per page
     page_info = None  # For pagination tracking
 
+    # URL-encode the vendor name to handle spaces or special characters
+    vendor = urllib.parse.quote(vendor)
+
     while True:
-        # Construct the URL for the request, adding pagination if necessary
+        # Construct the URL for the request
         if page_info:
-            url = f"https://{SHOPIFY_STORE}/admin/api/2023-07/products.json?limit={limit}&page_info={page_info}&vendor={vendor}"
+            # Use page_info for pagination, omit the vendor parameter in subsequent requests
+            url = f"https://{SHOPIFY_STORE}/admin/api/2023-07/products.json?limit={limit}&page_info={page_info}"
         else:
+            # Initial request includes the vendor parameter
             url = f"https://{SHOPIFY_STORE}/admin/api/2023-07/products.json?limit={limit}&vendor={vendor}"
 
         headers = {
@@ -240,39 +286,46 @@ def get_vendor_products(vendor, min_inventory_level):
             "X-Shopify-Access-Token": SHOPIFY_ACCESS_TOKEN
         }
 
+        logging.info(f"Requesting URL: {url}")  # Log the request URL
+
         # Fetch the data from Shopify
         response = requests.get(url, headers=headers)
 
+        if response.status_code == 400:
+            logging.error(f"Failed to fetch products for vendor {vendor}. Status code: {response.status_code}. Response: {response.text}")
+            break
+
         if response.status_code != 200:
-            logging.error(f"Failed to fetch products for vendor {vendor}. Status code: {response.status_code}")
+            logging.error(f"Failed to fetch products. Status code: {response.status_code}")
             break
 
         # Parse the response
         data = response.json()
         fetched_products = data.get('products', [])
 
-        # Log the number of products fetched
         logging.info(f"Fetched {len(fetched_products)} products from the Shopify API.")
 
         # Filter products by the total inventory of all variants
         for product in fetched_products:
+            # Sum the inventory of all variants
             total_inventory = sum(variant['inventory_quantity'] for variant in product['variants'])
 
-            # Log the total inventory for debugging
-            logging.info(f"Product '{product['title']}' has total inventory: {total_inventory}")
+            # Log the total inventory and the threshold for debugging
+            logging.info(f"Product '{product['title']}' has total inventory: {total_inventory}, threshold: {min_inventory_level}")
 
-            if total_inventory < min_inventory_level:
-                products.append(product)
-            else:
+            # Only include products where the total inventory is below the threshold
+            if total_inventory >= min_inventory_level:
                 logging.info(f"Skipping product '{product['title']}' with total inventory: {total_inventory} (above threshold).")
+            else:
+                logging.info(f"Including product '{product['title']}' with total inventory: {total_inventory} (below threshold).")
+                products.append(product)
 
-        # Check if there's a next page by looking at the 'Link' header
+        # Check for pagination (if there's a next page)
         link_header = response.headers.get('Link', '')
         if 'rel="next"' in link_header:
             # Extract the page_info parameter from the 'Link' header
             next_link = [link for link in link_header.split(',') if 'rel="next"' in link]
             if next_link:
-                # Extract the page_info value from the URL
                 page_info = next_link[0].split('page_info=')[-1].split('>')[0]
                 logging.info(f"Fetching next page with page_info: {page_info}")
         else:

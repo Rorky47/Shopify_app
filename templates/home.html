@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shopify App Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+            color: #333;
+        }
+
+        header {
+            background-color: #008cba;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        header h1 {
+            margin: 0;
+            font-weight: 300;
+        }
+
+        main {
+            max-width: 1000px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        section {
+            background-color: white;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        h2 {
+            font-weight: 400;
+            color: #555;
+        }
+
+        form {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 15px;
+        }
+
+        form label {
+            font-weight: 700;
+            color: #333;
+        }
+
+        input[type="text"],
+        input[type="number"] {
+            padding: 10px;
+            width: 100%;
+            max-width: 300px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        button {
+            background-color: #008cba;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #005f7f;
+        }
+
+        a {
+            display: inline-block;
+            margin-top: 10px;
+            color: #008cba;
+            text-decoration: none;
+            font-weight: 700;
+        }
+
+        a:hover {
+            color: #005f7f;
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            background-color: #333;
+            color: white;
+        }
+
+        footer p {
+            margin: 0;
+        }
+
+        @media (min-width: 600px) {
+            form {
+                flex-direction: row;
+            }
+
+            input[type="text"],
+            input[type="number"] {
+                width: auto;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <h1>Shopify App Dashboard</h1>
+    </header>
+
+    <main>
+        <!-- Generate Content for Vendor Section -->
+        <section>
+            <h2>Generate Content for Vendor</h2>
+            <form action="{{ url_for('products.generate_for_vendor') }}" method="POST">
+                <label for="vendor">Select Vendor:</label>
+                <input type="text" id="vendor" name="vendor" placeholder="Enter vendor name" required>
+
+                <!-- New Input for Minimum Inventory Level -->
+                <label for="min_inventory_level">Minimum Inventory Level:</label>
+                <input type="number" id="min_inventory_level" name="min_inventory_level" placeholder="Enter minimum inventory level" min="0" value="0" required>
+
+                <button type="submit">Generate Content</button>
+            </form>
+        </section>
+
+        <section>
+            <h2>Manage Ignored Products</h2>
+            <a href="/ignore">Go to Ignore List</a>
+        </section>
+
+        <section>
+            <h2>View Logs</h2>
+            <a href="/logs">Go to Logs</a>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2024 Shopify App</p>
+    </footer>
+
+</body>
+
+</html>

@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Generated Product Content</title>
+</head>
+<body>
+    <h1>Generated Content for Vendor's Products</h1>
+    <ul>
+        {% for product in products %}
+        <li>
+            <h2>{{ product.title }}</h2>
+            <p>{{ product.content }}</p>
+        </li>
+        {% endfor %}
+    </ul>
+    <a href="/">Back to Home</a>
+</body>
+</html>

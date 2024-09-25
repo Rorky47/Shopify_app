@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventory Manager - Ignore Products</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="text-center">Manage Ignored Products</h1>
+        <form method="POST" class="mt-4">
+            <div class="input-group mb-3">
+                <input type="text" name="product_name" class="form-control" placeholder="Enter product name to ignore" required>
+                <button class="btn btn-secondary" type="submit">Add to Ignore List</button>
+            </div>
+        </form>
+        <h3>Ignored Products:</h3>
+        <ul class="list-group">
+            {% for product in ignored_products %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    {{ product }}
+                    <form method="POST" action="/ignore/remove/{{ product }}">
+                        <button class="btn btn-danger btn-sm" type="submit">Remove</button>
+                    </form>
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
+</body>
+</html>

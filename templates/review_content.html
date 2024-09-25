@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Review Product Content</title>
+
+    <!-- Include Google Fonts for a modern look -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    
+    <!-- Link to external CSS for styling (optional, replace with your own style.css if needed) -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+    <style>
+        /* Modern Reset */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f4f4f4;
+            color: #333;
+            padding: 20px;
+        }
+
+        h1, h2 {
+            margin-bottom: 20px;
+            font-weight: 500;
+            text-align: center;
+        }
+
+        form {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .product {
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        textarea, input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            font-family: 'Roboto', sans-serif;
+            transition: border-color 0.3s ease;
+        }
+
+        textarea:focus, input[type="text"]:focus {
+            border-color: #007BFF;
+        }
+
+        .image-gallery {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .image-gallery img {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 4px;
+        }
+
+        .image-gallery label {
+            display: block;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        input[type="checkbox"] {
+            display: none;
+        }
+
+        input[type="checkbox"] + img {
+            cursor: pointer;
+            border: 3px solid transparent;
+            transition: border-color 0.3s ease;
+        }
+
+        input[type="checkbox"]:checked + img {
+            border-color: #007BFF;
+        }
+
+        button {
+            display: block;
+            width: 100%;
+            background-color: #007BFF;
+            color: white;
+            padding: 15px;
+            font-size: 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        /* Responsive design for smaller screens */
+        @media (max-width: 768px) {
+            .image-gallery {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .image-gallery img {
+                width: 150px;
+                height: 150px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Review Generated Content</h1>
+
+    <form action="{{ url_for('products.upload_content') }}" method="POST">
+        {% for product in products %}
+        <div class="product">
+            <h2>{{ product.title }}</h2>
+
+            <!-- Hidden input to pass product_id -->
+            <input type="hidden" name="product_ids" value="{{ product.product_id }}">
+
+            <!-- Description -->
+            <label for="description_{{ product.product_id }}">Description:</label>
+            <textarea name="description_{{ product.product_id }}" id="description_{{ product.product_id }}" rows="4">{{ product.description }}</textarea>
+
+            <!-- Tags -->
+            <label for="tags_{{ product.product_id }}">Tags:</label>
+            <input type="text" name="tags_{{ product.product_id }}" id="tags_{{ product.product_id }}" value="{{ product.tags }}">
+
+            <!-- Category -->
+            <label for="category_{{ product.product_id }}">Category:</label>
+            <input type="text" name="category_{{ product.product_id }}" id="category_{{ product.product_id }}" value="{{ product.category }}">
+
+            <!-- Image Selection -->
+            <h3>Select Images</h3>
+            <div class="image-gallery">
+                {% for image in product.images %}
+                <label>
+                    <input type="checkbox" name="selected_images_{{ product.product_id }}" value="{{ image }}">
+                    <img src="{{ image }}" alt="Product Image">
+                </label>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+
+        <button type="submit">Submit for Upload</button>
+    </form>
+
+</body>
+</html>
